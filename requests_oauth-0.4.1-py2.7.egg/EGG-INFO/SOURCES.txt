@@ -1,0 +1,15 @@
+LICENSE
+MANIFEST.in
+README.md
+setup.py
+oauth_hook/__init__.py
+oauth_hook/auth.py
+oauth_hook/hook.py
+requests_oauth.egg-info/PKG-INFO
+requests_oauth.egg-info/SOURCES.txt
+requests_oauth.egg-info/dependency_links.txt
+requests_oauth.egg-info/not-zip-safe
+requests_oauth.egg-info/requires.txt
+requests_oauth.egg-info/top_level.txt
+tests/__init__.py
+tests/tests.py

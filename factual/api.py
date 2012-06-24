@@ -6,7 +6,7 @@ import json
 from urllib import urlencode
 
 import requests
-from factual.oauth_hook.hook import OAuthHook
+from oauth_hook import OAuthHook
 
 from query import Crosswalk, Resolve, Table, Submit, Facets, Flag
 

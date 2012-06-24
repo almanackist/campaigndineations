@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import time
+from datetime import datetime
 import random
 import urllib
 from urlparse import urlparse, urlunparse, parse_qs, urlsplit, urlunsplit
@@ -31,12 +32,14 @@ class OAuthHook(object):
     OAUTH_VERSION = '1.0'
     header_auth = False
     signature = CustomSignatureMethod_HMAC_SHA1()
+    consumer_key = None
+    consumer_secret = None
 
     def __init__(self, access_token=None, access_token_secret=None, consumer_key=None, consumer_secret=None, header_auth=None):
         """
         Consumer is compulsory, while the user's Token can be retrieved through the API
         """
-        if access_token is not None and access_token_secret is not None:
+        if access_token is not None:
             self.token = Token(access_token, access_token_secret)
         else:
             self.token = None
@@ -63,12 +66,17 @@ class OAuthHook(object):
     @staticmethod
     def get_normalized_parameters(request):
         """
-        Returns a string that contains the parameters that must be signed. 
-        This function is called by SignatureMethod subclass CustomSignatureMethod_HMAC_SHA1 
+        Returns a string that contains the parameters that must be signed.
+        This function is called by SignatureMethod subclass CustomSignatureMethod_HMAC_SHA1
         """
-        data_and_params = dict(request.data.items() + request.params.items())
-        for key,value in data_and_params.items():
-            request.data_and_params[to_utf8(key)] = to_utf8(value)
+        # See issues #10 and #12
+        if ('Content-Type' not in request.headers or \
+            request.headers.get('Content-Type').startswith('application/x-www-form-urlencoded')) \
+            and not isinstance(request.data, basestring):
+            data_and_params = dict(request.data.items() + request.params.items())
+
+            for key,value in data_and_params.items():
+                request.data_and_params[to_utf8(key)] = to_utf8(value)
 
         if request.data_and_params.has_key('oauth_signature'):
             del request.data_and_params['oauth_signature']
@@ -121,7 +129,7 @@ class OAuthHook(object):
 
         for key, value in request.data_and_params.iteritems():
             query.setdefault(key, []).append(value)
-            
+
         query = urllib.urlencode(query, True)
         return urlunsplit((scheme, netloc, path, query, fragment))
 
@@ -154,15 +162,7 @@ class OAuthHook(object):
         if isinstance(request.data, list):
             request.data = dict(request.data)
 
-        # We reset _enc_params info to avoid that requests constructs a wrong url when calling _build_url
-        if request._enc_params:
-            request._enc_params = ''
-
-        # Looks like OAuth API providers don't handle cookies well, so we reset them
-        # See Github issue #5 https://github.com/maraujop/requests-oauth/issues/5
-        request.cookies = {}
-
-        # Dictionary to store data and params mixed together
+        # Dictionary to OAuth1 signing params
         request.oauth_params = {}
 
         # Adding OAuth params
@@ -172,24 +172,32 @@ class OAuthHook(object):
         request.oauth_params['oauth_version'] = self.OAUTH_VERSION
         if self.token:
             request.oauth_params['oauth_token'] = self.token.key
-        if hasattr(self.token, 'verifier') and self.token.verifier:
-            request.oauth_params['oauth_verifier'] = self.token.verifier
+        if 'oauth_verifier' in request.data:
+            request.oauth_params['oauth_verifier'] = request.data.pop('oauth_verifier')
         request.oauth_params['oauth_signature_method'] = self.signature.name
+
+        # oauth_callback is an special parameter, we remove it out of the body
+        # If it needs to go in the body, it will be overwritten later, otherwise not
+        if 'oauth_callback' in request.data:
+            request.oauth_params['oauth_callback'] = request.data.pop('oauth_callback')
+        if 'oauth_callback' in request.params:
+            request.oauth_params['oauth_callback'] = request.params.pop('oauth_callback')
 
         request.data_and_params = request.oauth_params.copy()
         request.oauth_params['oauth_signature'] = self.signature.sign(request, self.consumer, self.token)
+        request.data_and_params['oauth_signature'] = request.oauth_params['oauth_signature']
 
-        if request.method in ("GET", "DELETE"):
-            if not self.header_auth:
-                request.data_and_params['oauth_signature'] = request.oauth_params['oauth_signature']
-                request.url = self.to_url(request)
-            else:
-                request.headers['Authorization'] = self.authorization_header(request.oauth_params)
+        if self.header_auth:
+            request.headers['Authorization'] = self.authorization_header(request.oauth_params)
+        elif request.method in ("GET", "DELETE"):
+            request.url = self.to_url(request)
+        elif ('Content-Type' not in request.headers or \
+              request.headers['Content-Type'] != 'application/x-www-form-urlencoded') \
+              and not isinstance(request.data, basestring):
+            # You can pass a string as data. See issues #10 and #12
+            request.url = self.to_url(request)
+            request.data = {}
         else:
-            if not self.header_auth:
-                request.data_and_params['oauth_signature'] = request.oauth_params['oauth_signature']
-                request._enc_data = self.to_postdata(request)
-            else:
-                request.headers['Authorization'] = self.authorization_header(request.oauth_params)
+            request.data = request.data_and_params
 
         return request
