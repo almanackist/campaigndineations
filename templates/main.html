@@ -44,9 +44,7 @@
 		}
 		
 		.map {
-			position: absolute;
-			right: 0px;
-			top: 112px;
+			margin-top: 20px;
 		} 
 
 		.art + .art {
@@ -72,12 +70,17 @@
 	
 	
 	<body>
-	 <h1>Dineations</h1>
+	 <h1>CampaignDINEations</h1>
 
 	 <form method = "post">
 	 	<label>
-	 		<div>ZIP</div>
-	 		<input type="text" name="zip" value="{{zip}}">
+	 		<div>Candidate</div>
+	 		<input type="text" name="candidate" value="{{candidate}}">
+	 	</label>
+	 	
+	 	<label>
+	 		<div>State</div>
+	 		<input type="text" name="state" value="{{state}}">
 	 	</label>
 	 
 	 	<div class="error">{{error}}</div>
