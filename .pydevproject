@@ -32,9 +32,6 @@
 <path>${GOOGLE_APP_ENGINE}/lib/webapp2</path>
 <path>${GOOGLE_APP_ENGINE}/lib/webob_1_1_1</path>
 <path>${GOOGLE_APP_ENGINE}/lib/yaml/lib</path>
-<path>/Users/alanj/software/factual/factual-python-driver/factual</path>
-<path>/Users/alanj/software/requests/requests</path>
-<path>/Users/alanj/Documents/workspace/campaigndineations/factual/oauth_hook</path>
 </pydev_pathproperty>
 <pydev_property name="org.python.pydev.PYTHON_PROJECT_VERSION">python 2.7</pydev_property>
 <pydev_property name="org.python.pydev.PYTHON_PROJECT_INTERPRETER">Python2.7</pydev_property>

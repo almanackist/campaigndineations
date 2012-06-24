@@ -4,6 +4,8 @@ import logging
 import sys
 import os
 import json
+from factual.api import Factual
+factual = Factual(key='pkH5QydKEI2VJhHyKgiwP9Lrb7mn5HAC0rJdlzAC', secret='nnJ7VxEvZH9TPtsbZlJWukbtgXiD57c6vcqVBsTF')
 
 #sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'dev.env/lib/python2.7/site-packages/'))
 
@@ -42,8 +44,6 @@ def gmaps_img(points):
     return GMAPS_URL + markers
 
 def factual_query(zipcode):
-    from factual.api import Factual
-    factual = Factual(key='pkH5QydKEI2VJhHyKgiwP9Lrb7mn5HAC0rJdlzAC', secret='nnJ7VxEvZH9TPtsbZlJWukbtgXiD57c6vcqVBsTF')
     rests = factual.table('places').search('starbucks')
     query = rests.filters({'postcode': zipcode})
     logging.info(query.data())
