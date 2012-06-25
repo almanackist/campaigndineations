@@ -8,10 +8,10 @@ from urllib import urlencode
 import requests
 from oauth_hook import OAuthHook
 
-from query import Crosswalk, Resolve, Table, Submit, Facets, Flag
+from query import Crosswalk, Resolve, Table, Submit, Facets, Flag, Geopulse, Geocode
 
 API_V3_HOST = "http://api.v3.factual.com"
-DRIVER_VERSION_TAG = "factual-python-driver-1.1.2"
+DRIVER_VERSION_TAG = "factual-python-driver-1.2.0"
 
 class Factual(object):
     def __init__(self, key, secret):
@@ -40,6 +40,15 @@ class Factual(object):
     def flag(self, table, factual_id):
         return Flag(self.api, table, factual_id)
 
+    def geopulse(self, point={}):
+        return Geopulse(self.api, 'places/geopulse', {'geo': point})
+
+    def geocode(self, point):
+        return Geocode(self.api, 'places/geocode', {'geo': point})
+
+    def monetize(self):
+        return Table(self.api, 'places/monetize')
+
     def _generate_token(self, key, secret):
         access_token = OAuthHook(consumer_key=key, consumer_secret=secret, header_auth=True)
         return access_token
@@ -62,7 +71,11 @@ class API(object):
         return response['view']
 
     def raw_read(self, path, raw_params):
-        url = self._build_base_url(path) + raw_params
+        url = self._build_base_url(path)
+        if isinstance(raw_params, str):
+            url += raw_params
+        else:
+            url += self._make_query_string(raw_params)
         return self._make_request(url).text
 
     def build_url(self, path, params):
@@ -77,7 +90,7 @@ class API(object):
         response = self._make_request(url)
         payload = json.loads(response.text)
         if payload['status'] != 'ok':
-            raise APIException(response.status_code, payload)
+            raise APIException(response.status_code, payload, url)
         return payload['response']
 
     def _make_request(self, url):
@@ -91,7 +104,7 @@ class API(object):
         response = self.client.post(url, headers=headers)
         payload = json.loads(response.text)
         if payload['status'] != 'ok':
-            raise APIException(response.status_code, payload)
+            raise APIException(response.status_code, payload, url)
         return payload['response'] if 'response' in payload else payload
 
     def _make_query_string(self, params):
@@ -102,10 +115,11 @@ class API(object):
         return urlencode(string_params)
 
 class APIException(Exception):
-    def __init__(self, status_code, response):
+    def __init__(self, status_code, response, url):
         self.status_code = status_code
         self.response = response
-        exception = {'http_status_code':status_code,'response':response}
+        self.url = url
+        exception = {'http_status_code':status_code,'response':response, 'url':url}
         Exception.__init__(self, exception)
 
     def get_status_code(self):

@@ -8,3 +8,9 @@ def circle(lat, lon, radius):
     and radius parameters
     """
     return {'$circle': {'$center': [lat, lon], '$meters': radius}}
+
+def point(lat, lon):
+    """
+    Creates an API-ready point from the given latitude and longitue.
+    """
+    return {'$point': [lat, lon]}
