@@ -5,6 +5,7 @@ import sys
 import os
 import json
 import urllib2
+import re
 from collections import Counter
 from factual.api import Factual
 factual = Factual(key='pkH5QydKEI2VJhHyKgiwP9Lrb7mn5HAC0rJdlzAC', secret='nnJ7VxEvZH9TPtsbZlJWukbtgXiD57c6vcqVBsTF')
@@ -39,7 +40,7 @@ class Handler(webapp2.RequestHandler):
 ### FUNCTIONS
 
 # Make a static Google Map
-GMAPS_URL = 'http://maps.googleapis.com/maps/api/staticmap?size=380x263&sensor=false&'
+GMAPS_URL = 'http://maps.googleapis.com/maps/api/staticmap?size=400x150&sensor=false&'
 def gmaps_img(points):
     markers = '&'.join('markers=%s,%s' % (p['latitude'], p['longitude']) for p in points)
     return GMAPS_URL + markers
@@ -77,18 +78,12 @@ def factual_restaurants_in_zip(zipcode):
     return tally
 
 def factual_tally(factual_attr='price', result=''):
-    # TODO: Rewrite and implement with collections.Counter
-    tally = {}
-    for r in result:
-        if r.get(factual_attr):
-            if r[factual_attr] not in tally:
-                tally[r[factual_attr]] = 1
-            else:
-                tally[r[factual_attr]] += 1
-        else:
-            pass
-    return tally
-
+    c = Counter([i.get(factual_attr) for i in result])
+    c_sort = sorted(c.items(), key=lambda x: x[0])
+    if factual_attr == 'category':
+        for i in range(len(c_sort)):
+            c_sort[i] = (str(category_clean(c_sort[i][0])), c_sort[i][1])
+    return c_sort
 
     
 # Sunlight Campaign finance calls
@@ -122,10 +117,13 @@ def top_zips(contributions):
         else:
             zips[i['contributor_zipcode']][0] += 1
             zips[i['contributor_zipcode']][1] += float(i['amount'])
-    ziplist = sorted(zips.iteritems(), key=lambda x: x[1][1])
-    ziplist.reverse()
-    return ziplist[:10]
+    zip_by_amount = sorted(zips.iteritems(), key=lambda x: x[1][1])
+    zip_by_number = sorted(zips.iteritems(), key=lambda x: x[1][0])
+    logging.info(zip_by_amount[-1])
+    return zip_by_amount[-1], zip_by_number[-1] 
 
+def category_clean(cat_string):
+    return re.findall('[\w ]+$', cat_string)[0].lstrip()
 
 ### MAIN CLASSES
 
@@ -134,17 +132,19 @@ class MainPage(Handler):
         self.render('main.html')
 
     def post(self):
-        candidate = self.request.get('candidate')
-        state = self.request.get('state')
-        params = {'recipient_ft':candidate, 'cycle':'2012', 'date':'><|2012-01-01|2012-06-30', 'per_page':'50000'}
-        if state:
-            params['contributor_state'] = state
+        kwargs = {}
+        kwargs['candidate'] = self.request.get('candidate')
+        kwargs['state'] = self.request.get('state')
+        params = {'recipient_ft':kwargs['candidate'], 'cycle':'2012', 'date':'><|2011-10-01|2012-06-30', 'per_page':'50000'}
+        if kwargs.get('state'):
+            params['contributor_state'] = kwargs['state']
         contributions = pol_contributions(**params)
-        topzips = top_zips(contributions)
-        topzip = topzips[0][0]
-        logging.info(topzips)
-        img_url = gmaps_img(factual_zip_query(topzip))
-        self.render('main.html', candidate=candidate, state=state, img_url=img_url)
+        kwargs['zip_by_amount'], kwargs['zip_by_number'] = top_zips(contributions)
+        kwargs['rest_data_amt'] = factual_restaurants_in_zip(kwargs['zip_by_amount'][0])
+        kwargs['rest_data_num'] = factual_restaurants_in_zip(kwargs['zip_by_number'][0])
+        kwargs['img_url_amt'] = gmaps_img(factual_zip_query(kwargs['zip_by_amount'][0]))
+        kwargs['img_url_num'] = gmaps_img(factual_zip_query(kwargs['zip_by_number'][0]))
+        self.render('main.html', **kwargs)
 
 
 

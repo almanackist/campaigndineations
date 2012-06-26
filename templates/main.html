@@ -2,7 +2,11 @@
 
 <html>
 	<head>
-		<title>Dineations</title>
+		<title>campaign donEATions</title>
+
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.6.3/jquery.js" type="text/javascript" charset="utf-8"></script>
+	<script src="http://d3js.org/d3.v2.js" type="text/javascript" charset="utf-8"></script>			
+
 	</head>
 	
 	<style type="text/css">
@@ -15,6 +19,20 @@
 		
 		.error {
 			color: red
+		}
+		
+		h2 {
+			margin-top: 20px;
+			margin-bottom: 2px;
+		}
+		
+		h3 {
+			margin-top: 5px;
+			margin-bottom: 2px;
+		}
+		
+		img {
+			margin-top: 5px;
 		}
 		
 		label {
@@ -44,7 +62,10 @@
 		}
 		
 		.map {
-			margin-top: 20px;
+			margin-top: 5px;
+			-moz-border-radius: 7px;
+			-webkit-border-radius: 7px;
+			border-radius: 7px;
 		} 
 
 		.art + .art {
@@ -65,6 +86,11 @@
 			font-weight: italic;
 			font-size: 10px;
 		}
+		
+		.footnote {
+			font-size: 9px;
+		}
+		
 		
 	</style>
 	
@@ -89,8 +115,68 @@
 	 
 	 </form>
 	 
-	 {% if img_url %}
-	 	<img class="map" src = '{{img_url}}'>
+	 {% if img_url_amt %}
+	 	<h2>{{ zip_by_amount[0] }}</h2>
+	 	<h3>{{ zip_by_amount[1][0]}} contributions totalling {{zip_by_amount[1][1]}}</h3>
+	 	<table>
+	 	<tr class="footnote" valign="top">
+	 		<td>
+		 	<img class="map" src = '{{img_url_amt}}'>
+		 	</td>
+		 	
+		 	<td>
+		 	Category:<br>
+		 	{% for i in rest_data_amt[zip_by_amount[0]]['category'] %}
+		 		{{i[0]}}: {{i[1]}}<br>  
+		 	{% endfor %}
+	 		</td>
+
+		 	<td>
+		 	Rating:<br>
+		 	{% for i in rest_data_amt[zip_by_amount[0]]['rating'] %}
+		 		{{i[0]}}: {{i[1]}}<br> 
+		 	{% endfor %}
+		 	</td>
+		 	
+		 	<td>
+		 	Price:<br>
+		 	{% for i in rest_data_amt[zip_by_amount[0]]['price'] %}
+		 		{{i[0]}}: {{i[1]}}<br>  
+		 	{% endfor %}
+		 	</td>
+		 	
+		 	<td>
+		 	Attire:<br> 
+		 	{% for i in rest_data_amt[zip_by_amount[0]]['attire'] %}
+		 		{{i[0]}}: {{i[1]}}<br>  
+		 	{% endfor %}
+	 		</td>
+	 	</tr>
+	 	</table>
+	 	
+	 	<h2>{{ zip_by_number[0] }}</h2>
+	 	<h3>{{ zip_by_number[1][0]}} contributions totalling {{zip_by_number[1][1]}}</h3>
+	 	<img class="map" src = '{{img_url_num}}'><br>
+	 	Category: 
+	 	{% for i in rest_data_num[zip_by_number[0]]['category'] %}
+	 		{{i[0]}}: {{i[1]}}  |  
+	 	{% endfor %}
+	 	
+	 	<br>Rating: 
+	 	{% for i in rest_data_num[zip_by_number[0]]['rating'] %}
+	 		{{i[0]}}: {{i[1]}}  |  
+	 	{% endfor %}
+	 	
+	 	<br>Price: 
+	 	{% for i in rest_data_num[zip_by_number[0]]['price'] %}
+	 		{{i[0]}}: {{i[1]}}  |  
+	 	{% endfor %}
+	 	
+	 	<br>Attire: 
+	 	{% for i in rest_data_num[zip_by_number[0]]['attire'] %}
+	 		{{i[0]}}: {{i[1]}}  |  
+	 	{% endfor %}
+
 	 {% endif %}
 	 
 	 
