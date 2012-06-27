@@ -38,11 +38,13 @@ class Handler(webapp2.RequestHandler):
 
 
 ### FUNCTIONS
-
+0xD7191C; 0xFDAE61; 0xFFFFBF; 0xA6D96A; 0x1A9641;
 # Make a static Google Map
-GMAPS_URL = 'http://maps.googleapis.com/maps/api/staticmap?size=400x150&sensor=false&'
+GMAPS_URL = 'http://maps.googleapis.com/maps/api/staticmap?zoom=12&size=400x150&sensor=false&'
+MARKER_COLORS = {None:'0xBABABA', 5:'0xD7191C', 4:'0xFDAE61', 3:'0xFFFFBF', 2:'0xA6D96A', 1:'0x1A9641'} 
 def gmaps_img(points):
     markers = '&'.join('markers=%s,%s' % (p['latitude'], p['longitude']) for p in points)
+    logging.info(GMAPS_URL+markers)
     return GMAPS_URL + markers
 
 
@@ -55,15 +57,20 @@ def factual_zip_query(zipcode, search_str="Starbucks"):
     return query.data()
 
 def factual_get_zip_id(zipcode):
-    return json.loads(factual.raw_read('t/world-geographies', 'select=factual_id,name,placetype&filters={"$and":[{"name":{"$eq":%s}},{"country":{"$eq":"us"}},{"placetype":{"$eq":"postcode"}}]}' % zipcode))['response']['data'][0]['factual_id']
+    logging.info(zipcode)
+    params = 'select=factual_id,name,placetype&filters={"$and":[{"name":{"$eq":"%s"}},{"country":{"$eq":"us"}},{"placetype":{"$eq":"postcode"}}]}' % str(zipcode)
+    return json.loads(factual.raw_read('t/world-geographies', str(params)))['response']['data'][0]['factual_id']
     
-def factual_info_from_id(factual_id):
-    response = json.loads(factual.raw_read('t/world-geographies', 'select=name,country,latitude,longitude,placetype,neighbors,ancestors&filters={"factual_id":{"$eq":"%s"}}' % factual_id))
+def factual_latlong_from_id(zipcode):
+    logging.info(zipcode)
+    zip_id = factual_get_zip_id(zipcode)
+    params = 'select=name,country,latitude,longitude,placetype,neighbors,ancestors&filters={"factual_id":{"$eq":"%s"}}' % zip_id
+    response = json.loads(factual.raw_read('t/world-geographies', str(params)))
     if response:
         params = {}
-        for p in ['name', 'placetype', 'latitude', 'longitude']:
+        for p in ['latitude', 'longitude']:
             params[p] = response['response']['data'][0][p]
-        return params
+        return [params]
 
 def get_restaurants_in_radius(lat, lon):
     query = factual.table('places').select('name').filters({'category':{'$bw':'Food & Beverage > Restaurants'}})
@@ -71,11 +78,38 @@ def get_restaurants_in_radius(lat, lon):
     return query.data()
 
 def factual_restaurants_in_zip(zipcode):
-    result = factual.table('restaurants-us').select('name,category,rating,attire,price').filters({'$and':[{'postcode':zipcode},{'category':{'$bw':'Food & Beverage > Restaurants'}}]}).data()
+    #TODO: Only grabbing default number of results. Need to get a total row count and page through the results to get everything
+    result = factual.table('restaurants-us').select('name,category,rating,attire,price,latitude,longitude').filters({'$and':[{'postcode':zipcode},{'country':'US'},{'category':{'$bw':'Food & Beverage > Restaurants'}}]}).data()
     tally = {zipcode:{}}
     for i in ['name','category','rating','attire','price']:
         tally[zipcode][i] = factual_tally(factual_attr=i, result=result)
+    tally['rated_coords'] = []
+    for r in result:
+        if r.get('latitude') and r.get('longitude'):
+            tally['rated_coords'].append({'price':r.get('price'), 'latitude':r.get('latitude'), 'longitude':r.get('longitude')})
     return tally
+
+def factual_zip_dining_summary(zipcode):
+    COMMON_FILTERS = {'$and':
+                      [{'postcode':str(zipcode)},
+                       {'country':'US'},
+                       {'category':
+                        {'$bw':'Food & Beverage > Restaurants'}},
+                       {'placeholder':''}
+                       ]
+                      }
+    SPECIAL_FILTERS = [{'under $15':{'price':'1'}},
+                       {'over $50':{'price':{"$gte":4}}},
+                       {"McDonald's":{'name':"McDonald's"}},
+                       {"sushi":{'cuisine':{"$search":"Sushi"}}},
+                       {"steak":{'cuisine':{"$search":"Steak"}}}]
+    zip_summary = {}
+    for f in SPECIAL_FILTERS:
+        COMMON_FILTERS['$and'][-1] = f.values()[0] 
+        query = factual.table('restaurants-us').filters(COMMON_FILTERS).include_count(True)
+        zip_summary[f.keys()[0]] = query.total_row_count()
+    zip_summary['Starbucks'] = factual.table('places').filters({"$and":[{'postcode':str(zipcode)},{"country":"US"},{"name":{"$search":"starbucks"}}]}).include_count(True).total_row_count() 
+    return zip_summary
 
 def factual_tally(factual_attr='price', result=''):
     c = Counter([i.get(factual_attr) for i in result])
@@ -135,15 +169,15 @@ class MainPage(Handler):
         kwargs = {}
         kwargs['candidate'] = self.request.get('candidate')
         kwargs['state'] = self.request.get('state')
-        params = {'recipient_ft':kwargs['candidate'], 'cycle':'2012', 'date':'><|2011-10-01|2012-06-30', 'per_page':'50000'}
+        params = {'recipient_ft':kwargs['candidate'], 'cycle':'2012', 'date':'><|2011-06-30|2012-06-30', 'per_page':'50000'}
         if kwargs.get('state'):
             params['contributor_state'] = kwargs['state']
         contributions = pol_contributions(**params)
         kwargs['zip_by_amount'], kwargs['zip_by_number'] = top_zips(contributions)
-        kwargs['rest_data_amt'] = factual_restaurants_in_zip(kwargs['zip_by_amount'][0])
-        kwargs['rest_data_num'] = factual_restaurants_in_zip(kwargs['zip_by_number'][0])
-        kwargs['img_url_amt'] = gmaps_img(factual_zip_query(kwargs['zip_by_amount'][0]))
-        kwargs['img_url_num'] = gmaps_img(factual_zip_query(kwargs['zip_by_number'][0]))
+        kwargs['rest_data_amt'] = factual_zip_dining_summary(kwargs['zip_by_amount'][0])
+        kwargs['rest_data_num'] = factual_zip_dining_summary(kwargs['zip_by_number'][0])
+        kwargs['img_url_amt'] = gmaps_img(factual_latlong_from_id(kwargs['zip_by_amount'][0]))
+        kwargs['img_url_num'] = gmaps_img(factual_latlong_from_id(kwargs['zip_by_number'][0]))
         self.render('main.html', **kwargs)
 
 

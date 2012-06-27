@@ -1,7 +1,6 @@
 """
 Factual API driver
 """
-
 import json
 from urllib import urlencode
 

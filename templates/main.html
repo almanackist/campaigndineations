@@ -88,9 +88,16 @@
 		}
 		
 		.footnote {
-			font-size: 9px;
+			font-size: 10px;
 		}
 		
+		.list-head {
+			font-weight: bold;
+		}
+		
+		.list-cell {
+			padding: 15px;
+		}
 		
 	</style>
 	
@@ -117,7 +124,7 @@
 	 
 	 {% if img_url_amt %}
 	 	<h2>{{ zip_by_amount[0] }}</h2>
-	 	<h3>{{ zip_by_amount[1][0]}} contributions totalling {{zip_by_amount[1][1]}}</h3>
+	 	<h3>{{ zip_by_amount[1][0]}} contributions totalling ${{zip_by_amount[1][1]}}</h3>
 	 	<table>
 	 	<tr class="footnote" valign="top">
 	 		<td>
@@ -125,61 +132,31 @@
 		 	</td>
 		 	
 		 	<td>
-		 	Category:<br>
-		 	{% for i in rest_data_amt[zip_by_amount[0]]['category'] %}
-		 		{{i[0]}}: {{i[1]}}<br>  
-		 	{% endfor %}
-	 		</td>
-
-		 	<td>
-		 	Rating:<br>
-		 	{% for i in rest_data_amt[zip_by_amount[0]]['rating'] %}
-		 		{{i[0]}}: {{i[1]}}<br> 
-		 	{% endfor %}
-		 	</td>
-		 	
-		 	<td>
-		 	Price:<br>
-		 	{% for i in rest_data_amt[zip_by_amount[0]]['price'] %}
-		 		{{i[0]}}: {{i[1]}}<br>  
-		 	{% endfor %}
-		 	</td>
-		 	
-		 	<td>
-		 	Attire:<br> 
-		 	{% for i in rest_data_amt[zip_by_amount[0]]['attire'] %}
-		 		{{i[0]}}: {{i[1]}}<br>  
-		 	{% endfor %}
+		 	{% for p in ['under $15', 'over $50', 'steak', 'sushi', "Starbucks", "McDonald's"] %}		 		
+				<div class="list-head">{{p}}:</div> 
+		 		{{ rest_data_amt[p] }}
+	 		{% endfor %}
 	 		</td>
 	 	</tr>
 	 	</table>
 	 	
 	 	<h2>{{ zip_by_number[0] }}</h2>
-	 	<h3>{{ zip_by_number[1][0]}} contributions totalling {{zip_by_number[1][1]}}</h3>
-	 	<img class="map" src = '{{img_url_num}}'><br>
-	 	Category: 
-	 	{% for i in rest_data_num[zip_by_number[0]]['category'] %}
-	 		{{i[0]}}: {{i[1]}}  |  
-	 	{% endfor %}
-	 	
-	 	<br>Rating: 
-	 	{% for i in rest_data_num[zip_by_number[0]]['rating'] %}
-	 		{{i[0]}}: {{i[1]}}  |  
-	 	{% endfor %}
-	 	
-	 	<br>Price: 
-	 	{% for i in rest_data_num[zip_by_number[0]]['price'] %}
-	 		{{i[0]}}: {{i[1]}}  |  
-	 	{% endfor %}
-	 	
-	 	<br>Attire: 
-	 	{% for i in rest_data_num[zip_by_number[0]]['attire'] %}
-	 		{{i[0]}}: {{i[1]}}  |  
-	 	{% endfor %}
-
-	 {% endif %}
-	 
-	 
+	 	<h3>{{ zip_by_number[1][0]}} contributions totalling ${{zip_by_number[1][1]}}</h3>
+	 	<table>
+	 	<tr class="footnote" valign="top">
+	 		<td>
+		 	<img class="map" src = '{{img_url_num}}'>
+		 	</td>
+		 	
+		 	<td>
+		 	{% for p in ['under $15', 'over $50', 'steak', 'sushi', "Starbucks", "McDonald's"] %}		 		
+				<div class="list-head">{{p}}:</div> 
+		 		{{ rest_data_num[p] }}
+	 		{% endfor %}
+	 		</td>
+	 	</tr>
+	 	</table>
+	 {% endif %}	
 	 <hr>
 	 	 	
 	 
