@@ -131,11 +131,7 @@
 		 	<img class="map" src = '{{img_url_amt}}'>
 		 	</td>
 		 	
-		 	<td>
-		 	{% for p in ['under $15', 'over $50', 'steak', 'sushi', "Starbucks", "McDonald's"] %}		 		
-				<div class="list-head">{{p}}:</div> 
-		 		{{ rest_data_amt[p] }}
-	 		{% endfor %}
+		 	<td class = "restaurant-graph">
 	 		</td>
 	 	</tr>
 	 	</table>
@@ -158,6 +154,53 @@
 	 	</table>
 	 {% endif %}	
 	 <hr>
+	 	
+	 	
+	 	<script type="text/javascript">
+			var dataset = {{ rest_data_amt|safe }};                        //Initialize empty array
+			
+			svg1 = d3.select(".restaurant-graph").append("svg");
+			
+			var h = 150
+			var w = 400
+			var bar_padding = 2
+			
+			svg1.attr("width", w)
+				.attr("height", h);
+
+
+			svg1.selectAll("rect")
+				.data(dataset)
+				.enter()
+				.append("rect")
+				.attr("x", 0)
+				.attr("y", function(d, i) {
+					return i * (h / 6);
+				})
+				.attr("width", 0)
+				.attr("height", h / 6 - bar_padding)
+				.attr("fill", "#BCBDDC")
+				.transition().duration(1400).attr("width", function(d){
+					return d[1]*10;
+				});
+				
+			// svg1.selectAll("text")
+				// .data(dataset)
+				// .enter()
+				// .append("text")
+				// .text(function(d){
+					// return d;
+				// })
+				// .attr("x", 0)
+				// .attr("y", function(d, i) {
+					// return i * (h / dataset.length) + 11;
+				// })
+				// .attr("font-family", "sans-serif")
+				// .attr("font-size", 10)
+				// .transition().duration(1400).attr("x", function(d){
+					// return d*10 + 3;
+				// });
+        </script>
 	 	 	
 	 
 	</body>

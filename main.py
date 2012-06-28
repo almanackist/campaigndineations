@@ -100,15 +100,15 @@ def factual_zip_dining_summary(zipcode):
                       }
     SPECIAL_FILTERS = [{'under $15':{'price':'1'}},
                        {'over $50':{'price':{"$gte":4}}},
-                       {"McDonald's":{'name':"McDonald's"}},
                        {"sushi":{'cuisine':{"$search":"Sushi"}}},
-                       {"steak":{'cuisine':{"$search":"Steak"}}}]
-    zip_summary = {}
+                       {"steak":{'cuisine':{"$search":"Steak"}}},
+                       {"McDonald's":{'name':"McDonald's"}}]
+    zip_summary = []
     for f in SPECIAL_FILTERS:
         COMMON_FILTERS['$and'][-1] = f.values()[0] 
         query = factual.table('restaurants-us').filters(COMMON_FILTERS).include_count(True)
-        zip_summary[f.keys()[0]] = query.total_row_count()
-    zip_summary['Starbucks'] = factual.table('places').filters({"$and":[{'postcode':str(zipcode)},{"country":"US"},{"name":{"$search":"starbucks"}}]}).include_count(True).total_row_count() 
+        zip_summary.append([f.keys()[0], query.total_row_count()])
+    zip_summary.append(['Starbucks', factual.table('places').filters({"$and":[{'postcode':str(zipcode)},{"country":"US"},{"name":{"$search":"starbucks"}}]}).include_count(True).total_row_count()]) 
     return zip_summary
 
 def factual_tally(factual_attr='price', result=''):
@@ -169,12 +169,12 @@ class MainPage(Handler):
         kwargs = {}
         kwargs['candidate'] = self.request.get('candidate')
         kwargs['state'] = self.request.get('state')
-        params = {'recipient_ft':kwargs['candidate'], 'cycle':'2012', 'date':'><|2011-06-30|2012-06-30', 'per_page':'50000'}
+        params = {'recipient_ft':kwargs['candidate'], 'cycle':'2012', 'date':'><|2011-09-01|2012-06-30', 'per_page':'50000'}
         if kwargs.get('state'):
             params['contributor_state'] = kwargs['state']
         contributions = pol_contributions(**params)
         kwargs['zip_by_amount'], kwargs['zip_by_number'] = top_zips(contributions)
-        kwargs['rest_data_amt'] = factual_zip_dining_summary(kwargs['zip_by_amount'][0])
+        kwargs['rest_data_amt'] = json.dumps(factual_zip_dining_summary(kwargs['zip_by_amount'][0]))
         kwargs['rest_data_num'] = factual_zip_dining_summary(kwargs['zip_by_number'][0])
         kwargs['img_url_amt'] = gmaps_img(factual_latlong_from_id(kwargs['zip_by_amount'][0]))
         kwargs['img_url_num'] = gmaps_img(factual_latlong_from_id(kwargs['zip_by_number'][0]))
