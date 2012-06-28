@@ -36,9 +36,9 @@
 		}
 		
 		label {
-			display: block;
-			font-size: 20px;
+			font-size: 15px;
 		}
+		
 		
 		input[type=text] {
 			width: 400px;
@@ -52,7 +52,7 @@
 			font-size: 17px;
 			font-family: monospace;
 		}
-		
+				
 		input[type=submit] {
 			font-size: 24px;
 		}
@@ -105,63 +105,74 @@
 	<body>
 	 <h1>campaign donEATions</h1>
 
+		<div class="intro-text">In a given state, which ZIP code gave the most to a given political candidate? <p>And more importantly: what's the restaurant scene there?</div>
+		<div class="footnote">(Campaign contribution data from the Sunlight Foundation's TransparencyData API, for Q4 2011 and slightly into Q1 2012, the most recent period for which 
+		I could retrieve and analyze individual contributions. Restaurant information via Factual's place and US restaurants APIs.)</div>
+
+	<hr>
+
 	 <form method = "post">
-	 	<label>
-	 		<div>Candidate</div>
-	 		<input type="text" name="candidate" value="{{candidate}}">
-	 	</label>
+	 		<label for="state">Show ZIPs in </div><select name="state">
+	 			{% for s in [['Alabama', 'AL'], ['Alaska', 'AK'], ['Arizona', 'AZ'], ['Arkansas', 'AR'], ['California', 'CA'], ['Colorado', 'CO'], ['Connecticut', 'CT'], ['Delaware', 'DE'], ['Florida', 'FL'], ['Georgia', 'GA'], ['Hawaii', 'HI'], ['Idaho', 'ID'], ['Illinois', 'IL'], ['Indiana', 'IN'], ['Iowa', 'IA'], ['Kansas', 'KS'], ['Kentucky', 'KY'], ['Louisiana', 'LA'], ['Maine', 'ME'], ['Maryland', 'MD'], ['Massachusetts', 'MA'], ['Michigan', 'MI'], ['Minnesota', 'MN'], ['Mississippi', 'MS'], ['Missouri', 'MO'], ['Montana', 'MT'], ['Nebraska', 'NE'], ['Nevada', 'NV'], ['New Hampshire', 'NH'], ['New Jersey', 'NJ'], ['New Mexico', 'NM'], ['New York', 'NY'], ['North Carolina', 'NC'], ['North Dakota', 'ND'], ['Ohio', 'OH'], ['Oklahoma', 'OK'], ['Oregon', 'OR'], ['Pennsylvania', 'PA'], ['Rhode Island', 'RI'], ['South Carolina', 'SC'], ['South Dakota', 'SD'], ['Tennessee', 'TN'], ['Texas', 'TX'], ['Utah', 'UT'], ['Vermont', 'VT'], ['Virginia', 'VA'], ['Washington', 'WA'], ['West Virginia', 'WV'], ['Wisconsin', 'WI'], ['Wyoming', 'WY']] %}
+					{% if s == state %}
+						<option value="{{s[1]}}" selected="selected">{{s[0]}}</option>
+					{% else %}
+						<option value="{{s[1]}}">{{s[0]}}</option>
+					{% endif %}
+				{% endfor %}
+	 		</select>
+	 		
+	 		
+	 		<label for="candidate"> that gave the most to </label><select name="candidate">
+	 			{% for name in ['Mitt Romney', 'Barack Obama'] %}
+					{% if name == candidate %}
+	 					<option value="{{name}}" selected="selected">{{name}}</option>
+	 				{% else %}
+	 					<option value="{{name}}">{{name}}</option>
+	 				{% endif %}
+	 			{% endfor %}
+	 		</select>
+	
 	 	
-	 	<label>
-	 		<div>State</div>
-	 		<input type="text" name="state" value="{{state}}">
-	 	</label>
+	 		
+
+	 	<input type="submit">
 	 
 	 	<div class="error">{{error}}</div>
 	 	
-	 	<input type="submit">
 	 
 	 </form>
 	 
-	 {% if img_url_amt %}
-	 	<h2>{{ zip_by_amount[0] }}</h2>
-	 	<h3>{{ zip_by_amount[1][0]}} contributions totalling ${{zip_by_amount[1][1]}}</h3>
+	 {% if top_zips %}
+	 	{% for z in range(0,3) %}
+	 	<h2>{{ top_zips[z][0] }}</h2>
+	 	<h3>{{ top_zips[z][1][0] }} contributions totalling ${{ top_zips[z][1][1] }}</h3>
 	 	<table>
-	 	<tr class="footnote" valign="top">
+	 	<tr class="footnote" >
 	 		<td>
-		 	<img class="map" src = '{{img_url_amt}}'>
+		 	<img class="map" src = '{{ img_urls[z] }}'>
 		 	</td>
 		 	
-		 	<td class = "restaurant-graph">
+		 	<td class = "{{ tables[z] }}">
 	 		</td>
 	 	</tr>
 	 	</table>
-	 	
-	 	<h2>{{ zip_by_number[0] }}</h2>
-	 	<h3>{{ zip_by_number[1][0]}} contributions totalling ${{zip_by_number[1][1]}}</h3>
-	 	<table>
-	 	<tr class="footnote" valign="top">
-	 		<td>
-		 	<img class="map" src = '{{img_url_num}}'>
-		 	</td>
-		 	
-		 	<td>
-		 	{% for p in ['under $15', 'over $50', 'steak', 'sushi', "Starbucks", "McDonald's"] %}		 		
-				<div class="list-head">{{p}}:</div> 
-		 		{{ rest_data_num[p] }}
-	 		{% endfor %}
-	 		</td>
-	 	</tr>
-	 	</table>
+	 	{% endfor %}
 	 {% endif %}	
-	 <hr>
 	 	
 	 	
 	 	<script type="text/javascript">
-			var dataset = {{ rest_data_amt|safe }};                        //Initialize empty array
+
+		var data = {{ rest_data|safe }};                        //Initialize empty array
+		var tables = ['.table0', '.table1', '.table2']
+		
+		for (n=0;n<3;n++){
+
+			var data_sub = data[n]
 			
-			svg1 = d3.select(".restaurant-graph").append("svg");
+			svg1 = d3.select(tables[n]).append("svg");
 			
-			var h = 150
+			var h = 140
 			var w = 400
 			var bar_padding = 2
 			
@@ -170,7 +181,7 @@
 
 
 			svg1.selectAll("rect")
-				.data(dataset)
+				.data(data_sub)
 				.enter()
 				.append("rect")
 				.attr("x", 0)
@@ -179,27 +190,27 @@
 				})
 				.attr("width", 0)
 				.attr("height", h / 6 - bar_padding)
-				.attr("fill", "#BCBDDC")
+				.attr("fill", "#C6DBEF")
 				.transition().duration(1400).attr("width", function(d){
 					return d[1]*10;
 				});
 				
-			// svg1.selectAll("text")
-				// .data(dataset)
-				// .enter()
-				// .append("text")
-				// .text(function(d){
-					// return d;
-				// })
-				// .attr("x", 0)
-				// .attr("y", function(d, i) {
-					// return i * (h / dataset.length) + 11;
-				// })
-				// .attr("font-family", "sans-serif")
-				// .attr("font-size", 10)
-				// .transition().duration(1400).attr("x", function(d){
-					// return d*10 + 3;
-				// });
+			svg1.selectAll("text")
+				.data(data_sub)
+				.enter()
+				.append("text")
+				.text(function(d){
+					return d[0];
+				})
+				.attr("x", 4)
+				.attr("y", function(d, i) {
+					return i * (h / 6) + 19;
+				})
+				.attr("font-family", "Helvetica")
+				.attr("fill", "#6BAED6")
+				.attr("font-size", 19);
+				
+		};		
         </script>
 	 	 	
 	 

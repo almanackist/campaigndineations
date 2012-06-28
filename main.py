@@ -1,9 +1,9 @@
 import webapp2
 import jinja2
 import logging
-import sys
 import os
 import json
+import urllib
 import urllib2
 import re
 from collections import Counter
@@ -38,7 +38,7 @@ class Handler(webapp2.RequestHandler):
 
 
 ### FUNCTIONS
-0xD7191C; 0xFDAE61; 0xFFFFBF; 0xA6D96A; 0x1A9641;
+
 # Make a static Google Map
 GMAPS_URL = 'http://maps.googleapis.com/maps/api/staticmap?zoom=12&size=400x150&sensor=false&'
 MARKER_COLORS = {None:'0xBABABA', 5:'0xD7191C', 4:'0xFDAE61', 3:'0xFFFFBF', 2:'0xA6D96A', 1:'0x1A9641'} 
@@ -152,9 +152,10 @@ def top_zips(contributions):
             zips[i['contributor_zipcode']][0] += 1
             zips[i['contributor_zipcode']][1] += float(i['amount'])
     zip_by_amount = sorted(zips.iteritems(), key=lambda x: x[1][1])
-    zip_by_number = sorted(zips.iteritems(), key=lambda x: x[1][0])
-    logging.info(zip_by_amount[-1])
-    return zip_by_amount[-1], zip_by_number[-1] 
+    zip_by_amount.reverse()
+    logging.info(zip_by_amount[:3])
+    return zip_by_amount[:3] 
+ 
 
 def category_clean(cat_string):
     return re.findall('[\w ]+$', cat_string)[0].lstrip()
@@ -169,15 +170,15 @@ class MainPage(Handler):
         kwargs = {}
         kwargs['candidate'] = self.request.get('candidate')
         kwargs['state'] = self.request.get('state')
-        params = {'recipient_ft':kwargs['candidate'], 'cycle':'2012', 'date':'><|2011-09-01|2012-06-30', 'per_page':'50000'}
+        params = {'recipient_ft':urllib.quote_plus(kwargs['candidate']), 'cycle':'2012', 'date':'><|2011-09-01|2012-06-30', 'per_page':'50000'}
         if kwargs.get('state'):
             params['contributor_state'] = kwargs['state']
         contributions = pol_contributions(**params)
-        kwargs['zip_by_amount'], kwargs['zip_by_number'] = top_zips(contributions)
-        kwargs['rest_data_amt'] = json.dumps(factual_zip_dining_summary(kwargs['zip_by_amount'][0]))
-        kwargs['rest_data_num'] = factual_zip_dining_summary(kwargs['zip_by_number'][0])
-        kwargs['img_url_amt'] = gmaps_img(factual_latlong_from_id(kwargs['zip_by_amount'][0]))
-        kwargs['img_url_num'] = gmaps_img(factual_latlong_from_id(kwargs['zip_by_number'][0]))
+        kwargs['top_zips'] = top_zips(contributions)
+        kwargs['tables'] = ['table0', 'table1', 'table2']
+        kwargs['rest_data'] = [factual_zip_dining_summary(i[0]) for i in kwargs['top_zips']]
+        kwargs['img_urls'] = [gmaps_img(factual_latlong_from_id(i[0])) for i in kwargs['top_zips']]
+        logging.info(kwargs['img_urls'])
         self.render('main.html', **kwargs)
 
 
