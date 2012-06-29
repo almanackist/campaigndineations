@@ -6,6 +6,7 @@ import json
 import urllib
 import urllib2
 import re
+from google.appengine.api import memcache
 from collections import Counter
 from factual.api import Factual
 factual = Factual(key='pkH5QydKEI2VJhHyKgiwP9Lrb7mn5HAC0rJdlzAC', secret='nnJ7VxEvZH9TPtsbZlJWukbtgXiD57c6vcqVBsTF')
@@ -53,16 +54,13 @@ def gmaps_img(points):
 def factual_zip_query(zipcode, search_str="Starbucks"):
     rests = factual.table('places').search(search_str)
     query = rests.filters({'postcode': zipcode})
-    logging.info(query.data())
     return query.data()
 
 def factual_get_zip_id(zipcode):
-    logging.info(zipcode)
     params = 'select=factual_id,name,placetype&filters={"$and":[{"name":{"$eq":"%s"}},{"country":{"$eq":"us"}},{"placetype":{"$eq":"postcode"}}]}' % str(zipcode)
     return json.loads(factual.raw_read('t/world-geographies', str(params)))['response']['data'][0]['factual_id']
     
 def factual_latlong_from_id(zipcode):
-    logging.info(zipcode)
     zip_id = factual_get_zip_id(zipcode)
     params = 'select=name,country,latitude,longitude,placetype,neighbors,ancestors&filters={"factual_id":{"$eq":"%s"}}' % zip_id
     response = json.loads(factual.raw_read('t/world-geographies', str(params)))
@@ -153,7 +151,6 @@ def top_zips(contributions):
             zips[i['contributor_zipcode']][1] += float(i['amount'])
     zip_by_amount = sorted(zips.iteritems(), key=lambda x: x[1][1])
     zip_by_amount.reverse()
-    logging.info(zip_by_amount[:3])
     return zip_by_amount[:3] 
  
 
@@ -168,17 +165,21 @@ class MainPage(Handler):
 
     def post(self):
         kwargs = {}
-        kwargs['candidate'] = self.request.get('candidate')
-        kwargs['state'] = self.request.get('state')
-        params = {'recipient_ft':urllib.quote_plus(kwargs['candidate']), 'cycle':'2012', 'date':'><|2011-09-01|2012-06-30', 'per_page':'50000'}
-        if kwargs.get('state'):
-            params['contributor_state'] = kwargs['state']
-        contributions = pol_contributions(**params)
-        kwargs['top_zips'] = top_zips(contributions)
-        kwargs['tables'] = ['table0', 'table1', 'table2']
-        kwargs['rest_data'] = [factual_zip_dining_summary(i[0]) for i in kwargs['top_zips']]
-        kwargs['img_urls'] = [gmaps_img(factual_latlong_from_id(i[0])) for i in kwargs['top_zips']]
-        logging.info(kwargs['img_urls'])
+        candidate = self.request.get('candidate')
+        state = self.request.get('state')
+        cached_data = memcache.get(",".join([candidate,state]))
+        if cached_data:
+            kwargs = cached_data
+        else:
+            kwargs['candidate'] = self.request.get('candidate')
+            kwargs['state'] = self.request.get('state')
+            params = {'recipient_ft':urllib.quote_plus(kwargs['candidate']), 'contributor_state':kwargs['state'], 'cycle':'2012', 'date':'><|2011-09-01|2012-06-30', 'per_page':'50000'}
+            contributions = pol_contributions(**params)
+            kwargs['top_zips'] = top_zips(contributions)
+            kwargs['tables'] = ['table0', 'table1', 'table2']
+            kwargs['rest_data'] = [factual_zip_dining_summary(i[0]) for i in kwargs['top_zips']]
+            kwargs['img_urls'] = [gmaps_img(factual_latlong_from_id(i[0])) for i in kwargs['top_zips']]
+            memcache.set(",".join([candidate,state]), kwargs)
         self.render('main.html', **kwargs)
 
 
