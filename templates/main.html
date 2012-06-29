@@ -19,7 +19,6 @@
 	 			
 	 <h1 class="title-box" style="background:#9ECAE1;color:white;">campaign donEATions</h1>
 
-		<div class="intro-text">Quick profiles of the restaurant landscape in top-donating ZIP codes for a given politician.</div>
 
 	 <form class="title-box" style="background:#C6DBEF;" method = "post">
 		 		<label for="state">Show ZIPs in </label><br><select name="state">
@@ -33,7 +32,7 @@
 		 		</select>
 		 		
 		 		<br><label for="candidate"> that gave the most to </label><br><select name="candidate">
-		 			{% for name in ['Mitt Romney', 'Barack Obama'] %}
+		 			{% for name in ['Barack Obama', 'Mitt Romney', 'Ron Paul', 'Dianne Feinstein', 'Bob Casey', 'Sherrod Brown', 'Maria Cantwell', 'Scott Brown', 'Dean Heller', 'Orrin Hatch', 'John Barrasso', 'Nancy Pelosi', 'John Boehner', 'Eric Cantor', 'Kevin McCarthy', 'Steny Hoyer'] %}
 						{% if name == candidate %}
 		 					<option value="{{name}}" selected="selected">{{name}}</option>
 		 				{% else %}
@@ -60,19 +59,27 @@
 	
 	 {% if top_zips %}
 	 	{% for z in range(0,3) %}
-	 	<h2>{{ top_zips[z][0] }}</h2>
-	 	<h3>{{ top_zips[z][1][0] }} contributions totalling ${{ top_zips[z][1][1] }}</h3>
-	 	<table style="margin-bottom:20px;">
-	 	<tr>
-	 		<td>
-		 	<img class="map" src = '{{ img_urls[z] }}'>
-		 	</td>
-		 	
-		 	<td class = "{{ tables[z] }}">
-	 		</td>
-	 	</tr>
-	 	</table>
+		 	{% if top_zips[z] %}
+			 	<h2>{{ top_zips[z][0] }}</h2>
+			 		{% if top_zips[z][1][0] == 1 %}
+			 			<h3>{{ top_zips[z][1][0] }} contribution totalling ${{ '{:20,.2f}'.format(top_zips[z][1][1]).lstrip() }}</h3>
+			 		{% else %}
+			 			<h3>{{ top_zips[z][1][0] }} contributions totalling ${{ '{:20,.2f}'.format(top_zips[z][1][1]).lstrip() }}</h3>
+			 		{% endif %}
+			 	<table style="margin-bottom:20px;">
+			 	<tr>
+			 		<td>
+				 	<img class="map" src = '{{ img_urls[z] }}'>
+				 	</td>
+				 	
+				 	<td class = "{{ tables[z] }}">
+			 		</td>
+			 	</tr>
+			 	</table>
+			{% endif %}
 	 	{% endfor %}
+	 {% else %}
+	 	<h2>No contribution data available</h2>
 	 {% endif %}	
 	 	
 	 	
@@ -109,7 +116,7 @@
 				.attr("width", 0)
 				.attr("height", h / 6 - bar_padding)
 				.attr("fill", "#C6DBEF")
-				.transition().duration(1400).attr("width", function(d){
+				.transition().delay(1000).duration(1400).attr("width", function(d){
 					return d[1]*3;
 				});
 				

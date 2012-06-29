@@ -11,7 +11,6 @@ from collections import Counter
 from factual.api import Factual
 factual = Factual(key='pkH5QydKEI2VJhHyKgiwP9Lrb7mn5HAC0rJdlzAC', secret='nnJ7VxEvZH9TPtsbZlJWukbtgXiD57c6vcqVBsTF')
 
-
 ### TEMPLATE VARIABLES
 template_dir = os.path.join(os.path.dirname(__file__), 'templates')
 jinja_env = jinja2.Environment(loader = jinja2.FileSystemLoader(template_dir),
@@ -41,11 +40,10 @@ class Handler(webapp2.RequestHandler):
 ### FUNCTIONS
 
 # Make a static Google Map
-GMAPS_URL = 'http://maps.googleapis.com/maps/api/staticmap?zoom=12&size=400x150&sensor=false&'
+GMAPS_URL = 'http://maps.googleapis.com/maps/api/staticmap?zoom=11&size=320x150&sensor=false&'
 MARKER_COLORS = {None:'0xBABABA', 5:'0xD7191C', 4:'0xFDAE61', 3:'0xFFFFBF', 2:'0xA6D96A', 1:'0x1A9641'} 
 def gmaps_img(points):
     markers = '&'.join('markers=%s,%s' % (p['latitude'], p['longitude']) for p in points)
-    logging.info(GMAPS_URL+markers)
     return GMAPS_URL + markers
 
 
@@ -159,9 +157,11 @@ def category_clean(cat_string):
 
 ### MAIN CLASSES
 
+DEFAULT = {'tables': ['table0', 'table1', 'table2'], 'candidate': u'Barack Obama', 'top_zips': [(u'10024', [278, 259375.0]), (u'10023', [237, 211436.0]), (u'10011', [187, 179485.0])], 'img_urls': ['http://maps.googleapis.com/maps/api/staticmap?zoom=11&size=320x150&sensor=false&markers=40.78701,-73.977814', 'http://maps.googleapis.com/maps/api/staticmap?zoom=11&size=320x150&sensor=false&markers=40.775681,-73.986954', 'http://maps.googleapis.com/maps/api/staticmap?zoom=11&size=320x150&sensor=false&markers=40.741669,-74.004044'], 'rest_data': [[['under $15', 34], ['over $50', 13], ['sushi', 16], ['steak', 9], ["McDonald's", 2], ['Starbucks', 5]], [['under $15', 29], ['over $50', 18], ['sushi', 10], ['steak', 4], ["McDonald's", 1], ['Starbucks', 13]], [['under $15', 63], ['over $50', 31], ['sushi', 20], ['steak', 11], ["McDonald's", 2], ['Starbucks', 9]]], 'state': u'NY'}
+
 class MainPage(Handler):    
     def get(self):
-        self.render('main.html')
+        self.render('main.html', **DEFAULT)
 
     def post(self):
         kwargs = {}
