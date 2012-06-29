@@ -94,8 +94,8 @@ def factual_zip_dining_summary(zipcode):
                        {'placeholder':''}
                        ]
                       }
-    SPECIAL_FILTERS = [{'under $15':{'price':'1'}},
-                       {'over $50':{'price':{"$gte":4}}},
+    SPECIAL_FILTERS = [{'meals < $15':{'price':'1'}},
+                       {'meals > $50':{'price':{"$gte":4}}},
                        {"sushi":{'cuisine':{"$search":"Sushi"}}},
                        {"steak":{'cuisine':{"$search":"Steak"}}},
                        {"McDonald's":{'name':"McDonald's"}}]
@@ -183,6 +183,32 @@ class MainPage(Handler):
         self.render('main.html', **kwargs)
 
 
+class HackPage(MainPage):
+    def get(self):
+        if self.request.get('candidate') and self.request.get('state'):
+            return self.post()
+        self.render('main.html', **DEFAULT)
 
-app = webapp2.WSGIApplication([('/', MainPage)], debug=True)
+    def post(self):
+        kwargs = {}
+        candidate = self.request.get('candidate')
+        state = self.request.get('state')
+        cached_data = memcache.get(",".join([candidate,state]))
+        if cached_data:
+            kwargs = cached_data
+        else:
+            kwargs['candidate'] = self.request.get('candidate')
+            kwargs['state'] = self.request.get('state')
+            params = {'recipient_ft':urllib.quote_plus(kwargs['candidate']), 'contributor_state':kwargs['state'], 'cycle':'2012', 'date':'><|2011-09-01|2012-06-30', 'per_page':'50000'}
+            contributions = pol_contributions(**params)
+            kwargs['top_zips'] = top_zips(contributions)
+            kwargs['tables'] = ['table0', 'table1', 'table2']
+            kwargs['rest_data'] = [factual_zip_dining_summary(i[0]) for i in kwargs['top_zips']]
+            kwargs['img_urls'] = [gmaps_img(factual_latlong_from_id(i[0])) for i in kwargs['top_zips']]
+            memcache.set(",".join([candidate,state]), kwargs)
+        self.render('hack.html', **kwargs)
+    
+
+app = webapp2.WSGIApplication([('/', MainPage),
+                               ('/hack', HackPage)], debug=True)
 

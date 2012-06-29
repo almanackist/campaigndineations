@@ -20,33 +20,9 @@
 	 <h1 class="title-box" style="background:#9ECAE1;color:white;"><a href="/" class="plain-link">campaign donEATions</a></h1>
 
 
-	 <form class="title-box" style="background:#C6DBEF;" method = "post">
-		 		<label for="state">Show ZIPs in </label><br><select name="state">
-		 			{% for s in [['Alabama', 'AL'], ['Alaska', 'AK'], ['Arizona', 'AZ'], ['Arkansas', 'AR'], ['California', 'CA'], ['Colorado', 'CO'], ['Connecticut', 'CT'], ['Delaware', 'DE'], ['Florida', 'FL'], ['Georgia', 'GA'], ['Hawaii', 'HI'], ['Idaho', 'ID'], ['Illinois', 'IL'], ['Indiana', 'IN'], ['Iowa', 'IA'], ['Kansas', 'KS'], ['Kentucky', 'KY'], ['Louisiana', 'LA'], ['Maine', 'ME'], ['Maryland', 'MD'], ['Massachusetts', 'MA'], ['Michigan', 'MI'], ['Minnesota', 'MN'], ['Mississippi', 'MS'], ['Missouri', 'MO'], ['Montana', 'MT'], ['Nebraska', 'NE'], ['Nevada', 'NV'], ['New Hampshire', 'NH'], ['New Jersey', 'NJ'], ['New Mexico', 'NM'], ['New York', 'NY'], ['North Carolina', 'NC'], ['North Dakota', 'ND'], ['Ohio', 'OH'], ['Oklahoma', 'OK'], ['Oregon', 'OR'], ['Pennsylvania', 'PA'], ['Rhode Island', 'RI'], ['South Carolina', 'SC'], ['South Dakota', 'SD'], ['Tennessee', 'TN'], ['Texas', 'TX'], ['Utah', 'UT'], ['Vermont', 'VT'], ['Virginia', 'VA'], ['Washington', 'WA'], ['West Virginia', 'WV'], ['Wisconsin', 'WI'], ['Wyoming', 'WY']] %}
-						{% if s[1] == state %}
-							<option value="{{s[1]}}" selected="selected">{{s[0]}}</option>
-						{% else %}
-							<option value="{{s[1]}}">{{s[0]}}</option>
-						{% endif %}
-					{% endfor %}
-		 		</select>
-		 		
-		 		<br><label for="candidate"> that gave the most to </label><br><select name="candidate">
-		 			{% for name in ['Barack Obama', 'Mitt Romney', 'Ron Paul', 'Dianne Feinstein', 'Bob Casey', 'Sherrod Brown', 'Maria Cantwell', 'Scott Brown', 'Dean Heller', 'Orrin Hatch', 'John Barrasso', 'Nancy Pelosi', 'John Boehner', 'Eric Cantor', 'Kevin McCarthy', 'Steny Hoyer'] %}
-						{% if name == candidate %}
-		 					<option value="{{name}}" selected="selected">{{name}}</option>
-		 				{% else %}
-		 					<option value="{{name}}">{{name}}</option>
-		 				{% endif %}
-		 			{% endfor %}
-		 		</select>
-	
-		<br><input type="submit">
-	 
-	 	<div class="error">{{error}}</div>
-	 	
-	 
-	 </form>
+	 <div class="title-box" style="background:#C6DBEF;" >
+		Sneaky. Very sneaky. But I'll still tell you about ZIPs in {{state}} that donated the most to {{candidate}}. 
+	 </div>
 	 
 		<hr>
 		<div class="footnote">(Campaign contribution data from the Sunlight Foundation's <a class="simple-link" href="http://data.influenceexplorer.com/api/contributions/">TransparencyData</a> API, for Q4 2011 and slightly into Q1 2012, the most recent period for which 

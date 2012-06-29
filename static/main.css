@@ -7,6 +7,14 @@
 		.error {
 			color: red
 		}
+		a.plain-link {
+			text-decoration:none;
+			color:white;	
+		}
+		
+		.plain-link:hover {
+			color:#C6DBEF;
+		}
 		
 		h1 {
 			margin-top: 0px;
