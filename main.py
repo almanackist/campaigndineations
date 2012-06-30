@@ -6,10 +6,13 @@ import json
 import urllib
 import urllib2
 import re
+import time
+from foodgenius import Foodgenius
 from google.appengine.api import memcache
 from collections import Counter
 from factual.api import Factual
 factual = Factual(key='pkH5QydKEI2VJhHyKgiwP9Lrb7mn5HAC0rJdlzAC', secret='nnJ7VxEvZH9TPtsbZlJWukbtgXiD57c6vcqVBsTF')
+fg = Foodgenius(authentication={'key': 'sHLw25GEjbvCfWrCBA', 'secret': 'kB2ZdGuzVQm3AfafgjBLqE6RLQNVfqwT'})
 
 ### TEMPLATE VARIABLES
 template_dir = os.path.join(os.path.dirname(__file__), 'templates')
@@ -46,6 +49,19 @@ def gmaps_img(points):
     markers = '&'.join('markers=%s,%s' % (p['latitude'], p['longitude']) for p in points)
     return GMAPS_URL + markers
 
+def gmaps_img_zip(zipcode):
+    return GMAPS_URL + "markers=%s" % zipcode
+
+
+def foodgenius_expensive_nearby(zipcode):
+    lat, lon = factual_latlong_from_id(zipcode)
+    (headers, response) = fg.menus.near(lat+"@"+lon).get(order_by='-price', min_price='1.00')
+    logging.info(response)
+    if response['menu_items']:
+        return "$%.2f for %s at %s (%s)" % (response['menu_items'][0]['price'], 
+                                            response['menu_items'][0]['name'], 
+                                            response['menu_items'][0]['location']['restaurant']['name'], 
+                                            response['menu_items'][0]['location']['place']['street'] )
 
 # TODO: default to user's state if none specified
 def factual_zip_query(zipcode, search_str="Starbucks"):
@@ -62,10 +78,10 @@ def factual_latlong_from_id(zipcode):
     params = 'select=name,country,latitude,longitude,placetype,neighbors,ancestors&filters={"factual_id":{"$eq":"%s"}}' % zip_id
     response = json.loads(factual.raw_read('t/world-geographies', str(params)))
     if response:
-        params = {}
-        for p in ['latitude', 'longitude']:
-            params[p] = response['response']['data'][0][p]
-        return [params]
+#        params = {}
+#        for p in ['latitude', 'longitude']:
+#            params[p] = response['response']['data'][0][p]
+        return str(response['response']['data'][0]['latitude']), str(response['response']['data'][0]['longitude']) 
 
 def get_restaurants_in_radius(lat, lon):
     query = factual.table('places').select('name').filters({'category':{'$bw':'Food & Beverage > Restaurants'}})
@@ -98,23 +114,32 @@ def factual_zip_dining_summary(zipcode):
                        {"steak":{'cuisine':{"$search":"Steak"}}},
                        {"McDonald's":{'name':"McDonald's"}}]
     zip_summary = []
-#    query = factual.facets('restaurants-us').select('cuisine,price,name').filters(COMMON_FILTERS)
-#    data = query.data()
-#    zip_summary.append(['meals < $15', sum([data['price'][i] for i in data['price'] if i == '1'])])
-#    zip_summary.append(['meals > $50', sum([data['price'][i] for i in data['price'] if i in ['4','4.5','5']])])
-#    zip_summary.append(['sushi', sum([data['cuisine'][i] for i in data['cuisine'] if 'sushi' in i])])
-#    zip_summary.append(['steak', sum([data['cuisine'][i] for i in data['cuisine'] if 'steak' in i])])                                      
-#    zip_summary.append(["McDonald's", sum([data['cuisine'][i] for i in data['name'] if i == "McDonald's"])])                                      
+#    COMMON_FILTERS['$and'][-1] = {'name':"McDonald's"}
+#    logging.info(COMMON_FILTERS)
+#    time.sleep(0.01)
+#    name_query = factual.facets('restaurants-us').select('name').filters(COMMON_FILTERS).data()
+    COMMON_FILTERS['$and'].pop()
+    logging.info(COMMON_FILTERS)
+    time.sleep(0.01)
+    price_query = factual.facets('restaurants-us').select('price').filters(COMMON_FILTERS).data()
 
-    for f in SPECIAL_FILTERS:
-        COMMON_FILTERS['$and'][-1] = f.values()[0] 
-        try:
-            query = factual.table('restaurants-us').filters(COMMON_FILTERS).include_count(True)
-            zip_summary.append([f.keys()[0], query.total_row_count()])
-        except:
-            zip_summary.append([f.keys()[0], "failed on %s" % f])
+    zip_summary.append(['restaurants by price range:', 0])
+    zip_summary.append(['$75+', sum([price_query['price'][i] for i in price_query['price'] if i == '5'])])
+    zip_summary.append(['$50-$75', sum([price_query['price'][i] for i in price_query['price'] if i == '4'])])
+    zip_summary.append(['$30-$50', sum([price_query['price'][i] for i in price_query['price'] if i == '3'])])
+    zip_summary.append(['$15-$30', sum([price_query['price'][i] for i in price_query['price'] if i == '2'])])
+    zip_summary.append(['<$15', sum([price_query['price'][i] for i in price_query['price'] if i == '1'])])
+#    zip_summary.append(["McDonald's", sum([name_query['name'][i] for i in name_query['name'] if i.lower() == "mcdonald's"])])                              
 
-    zip_summary.append(['Starbucks', factual.table('places').filters({"$and":[{'postcode':str(zipcode)},{"country":"US"},{"name":{"$search":"starbucks"}}]}).include_count(True).total_row_count()]) 
+#    for f in SPECIAL_FILTERS:
+#        COMMON_FILTERS['$and'][-1] = f.values()[0] 
+#        try:
+#            query = factual.table('restaurants-us').filters(COMMON_FILTERS).include_count(True)
+#            zip_summary.append([f.keys()[0], query.total_row_count()])
+#        except:
+#            zip_summary.append([f.keys()[0], "failed on %s" % f])
+
+#    zip_summary.append(['Starbucks', factual.table('places').filters({"$and":[{'postcode':str(zipcode)},{"country":"US"},{"name":{"$search":"starbucks"}}]}).include_count(True).total_row_count()]) 
     return zip_summary
 
 def factual_tally(factual_attr='price', result=''):
@@ -167,7 +192,7 @@ def category_clean(cat_string):
 
 ### MAIN CLASSES
 
-DEFAULT = {'tables': ['table0', 'table1', 'table2'], 'candidate': u'Barack Obama', 'top_zips': [(u'10024', [278, 259375.0]), (u'10023', [237, 211436.0]), (u'10011', [187, 179485.0])], 'img_urls': ['http://maps.googleapis.com/maps/api/staticmap?zoom=11&size=320x150&sensor=false&markers=40.78701,-73.977814', 'http://maps.googleapis.com/maps/api/staticmap?zoom=11&size=320x150&sensor=false&markers=40.775681,-73.986954', 'http://maps.googleapis.com/maps/api/staticmap?zoom=11&size=320x150&sensor=false&markers=40.741669,-74.004044'], 'rest_data': [[['meals < $15', 34], ['meals > $50', 13], ['sushi', 16], ['steak', 9], ["McDonald's", 2], ['Starbucks', 5]], [['meals < $15', 29], ['meals > $50', 18], ['sushi', 10], ['steak', 4], ["McDonald's", 1], ['Starbucks', 13]], [['meals < $15', 63], ['meals > $50', 31], ['sushi', 20], ['steak', 11], ["McDonald's", 2], ['Starbucks', 9]]], 'state': u'NY'}
+DEFAULT = {'tables': ['table0', 'table1', 'table2'], 'candidate': u'Barack Obama', 'top_zips': [(u'10024', [278, 259375.0]), (u'10023', [237, 211436.0]), (u'10011', [187, 179485.0])], 'img_urls': ['http://maps.googleapis.com/maps/api/staticmap?zoom=11&size=320x150&sensor=false&markers=40.78701,-73.977814', 'http://maps.googleapis.com/maps/api/staticmap?zoom=11&size=320x150&sensor=false&markers=40.775681,-73.986954', 'http://maps.googleapis.com/maps/api/staticmap?zoom=11&size=320x150&sensor=false&markers=40.741669,-74.004044'], 'rest_data': [[['restaurants by price range:', 0], ['$75+', 4], ['$50-$75', 9], ['$30-$50', 23], ['$15-$30', 66], ['<$15', 34]], [['restaurants by price range:', 0], ['$75+', 2], ['$50-$75', 16], ['$30-$50', 24], ['$15-$30', 43], ['<$15', 29]], [['restaurants by price range:', 0], ['$75+', 7], ['$50-$75', 24], ['$30-$50', 44], ['$15-$30', 104], ['<$15', 63]]], 'state': u'NY'}
 
 class MainPage(Handler):    
     def get(self):
@@ -188,12 +213,20 @@ class MainPage(Handler):
             kwargs['top_zips'] = top_zips(contributions)
             kwargs['tables'] = ['table0', 'table1', 'table2']
             kwargs['rest_data'] = [factual_zip_dining_summary(i[0]) for i in kwargs['top_zips']]
-            kwargs['img_urls'] = [gmaps_img(factual_latlong_from_id(i[0])) for i in kwargs['top_zips']]
+
+#            kwargs['img_urls'] = [gmaps_img(factual_latlong_from_id(i[0])) for i in kwargs['top_zips']]
+#            data = factual.raw_read('/multi',{"queries":{"place":"/places/t/global?geo={'$point':[34.06021,-118.41828]}&limit=1","place2":{"place":"/places/t/global?geo={'$point':[35.06021,-118.41828]}&limit=1"}}})
+#            logging.info(data)
+
+            kwargs['priciest_dish'] = [foodgenius_expensive_nearby(i[0]) for i in kwargs['top_zips']]
+
+                        
+            kwargs['img_urls'] = [gmaps_img_zip(str(i[0])) for i in kwargs['top_zips']]
             logging.info(kwargs['rest_data'])
             memcache.set(",".join([candidate,state]), kwargs)
         self.render('main.html', **kwargs)
 
-
+factual.raw_read('multi',{"queries":{"get-postcode":{"t/places":"filters=%7B%22postcode%22%3A%2290067%22%7D"},"get-facet":{"t/places/facets":'filters=%7B%22postcode%22%3A%2290067%22%7D&select=category'}}})
 class HackPage(MainPage):
     def get(self):
         if self.request.get('candidate') and self.request.get('state'):
@@ -215,7 +248,8 @@ class HackPage(MainPage):
             kwargs['top_zips'] = top_zips(contributions)
             kwargs['tables'] = ['table0', 'table1', 'table2']
             kwargs['rest_data'] = [factual_zip_dining_summary(i[0]) for i in kwargs['top_zips']]
-            kwargs['img_urls'] = [gmaps_img(factual_latlong_from_id(i[0])) for i in kwargs['top_zips']]
+#            kwargs['img_urls'] = [gmaps_img(factual_latlong_from_id(i[0])) for i in kwargs['top_zips']]
+            kwargs['img_urls'] = [gmaps_img_zip(str(i[0])) for i in kwargs['top_zips']]
             memcache.set(",".join([candidate,state]), kwargs)
         self.render('hack.html', **kwargs)
     

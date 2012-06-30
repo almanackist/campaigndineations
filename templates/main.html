@@ -19,7 +19,6 @@
 	 			
 	 <h1 class="title-box" style="background:#9ECAE1;color:white;"><a href="/" class="plain-link">campaign donEATions</a></h1>
 
-
 	 <form class="title-box" style="background:#C6DBEF;" method = "post">
 		 		<label for="state">Show ZIPs in </label><br><select name="state">
 		 			{% for s in [['Alabama', 'AL'], ['Alaska', 'AK'], ['Arizona', 'AZ'], ['Arkansas', 'AR'], ['California', 'CA'], ['Colorado', 'CO'], ['Connecticut', 'CT'], ['Delaware', 'DE'], ['Florida', 'FL'], ['Georgia', 'GA'], ['Hawaii', 'HI'], ['Idaho', 'ID'], ['Illinois', 'IL'], ['Indiana', 'IN'], ['Iowa', 'IA'], ['Kansas', 'KS'], ['Kentucky', 'KY'], ['Louisiana', 'LA'], ['Maine', 'ME'], ['Maryland', 'MD'], ['Massachusetts', 'MA'], ['Michigan', 'MI'], ['Minnesota', 'MN'], ['Mississippi', 'MS'], ['Missouri', 'MO'], ['Montana', 'MT'], ['Nebraska', 'NE'], ['Nevada', 'NV'], ['New Hampshire', 'NH'], ['New Jersey', 'NJ'], ['New Mexico', 'NM'], ['New York', 'NY'], ['North Carolina', 'NC'], ['North Dakota', 'ND'], ['Ohio', 'OH'], ['Oklahoma', 'OK'], ['Oregon', 'OR'], ['Pennsylvania', 'PA'], ['Rhode Island', 'RI'], ['South Carolina', 'SC'], ['South Dakota', 'SD'], ['Tennessee', 'TN'], ['Texas', 'TX'], ['Utah', 'UT'], ['Vermont', 'VT'], ['Virginia', 'VA'], ['Washington', 'WA'], ['West Virginia', 'WV'], ['Wisconsin', 'WI'], ['Wyoming', 'WY']] %}
@@ -50,7 +49,8 @@
 	 
 		<hr>
 		<div class="footnote">(Campaign contribution data from the Sunlight Foundation's <a class="simple-link" href="http://data.influenceexplorer.com/api/contributions/">TransparencyData</a> API, for Q4 2011 and slightly into Q1 2012, the most recent period for which 
-		I could retrieve and analyze individual contributions. Restaurant information via Factual's <a class="simple-link" href="http://developer.factual.com/display/docs/Places+API">Places</a> and <a class="simple-link" href="http://developer.factual.com/display/docs/Places+API+-+Restaurants">Restaurants</a> APIs.)</div>
+		I could retrieve and analyze individual contributions. Restaurant information via Factual's <a class="simple-link" href="http://developer.factual.com/display/docs/Places+API">Places</a> and <a class="simple-link" href="http://developer.factual.com/display/docs/Places+API+-+Restaurants">Restaurants</a> APIs.
+		And just for fun, high-priced dishes via the <a class="simple-link" href="http://getfoodgenius.com/api/">Food Genius</a> API)</div>
 
 		</td>
 		
@@ -66,15 +66,22 @@
 			 		{% else %}
 			 			<h3>{{ top_zips[z][1][0] }} contributions totalling ${{ '{:20,.2f}'.format(top_zips[z][1][1]).lstrip() }}</h3>
 			 		{% endif %}
-			 	<table style="margin-bottom:20px;">
+			 	<table width="720px" style="margin-bottom:20px;">
 			 	<tr>
 			 		<td>
 				 	<img class="map" src = '{{ img_urls[z] }}'>
 				 	</td>
 				 	
-				 	<td class = "{{ tables[z] }}">
+				 	<td align="left" class = "{{ tables[z] }}">
 			 		</td>
 			 	</tr>
+			 	<tr>
+			 		<td colspan="2">
+			 		{% if priciest_dish %}
+					<div style="font-size:11px;"><b>Extravagant menu item nearby:</b> {{ priciest_dish[z] }}</div>
+					{% endif %}
+		</td>
+		</tr>
 			 	</table>
 			{% endif %}
 	 	{% endfor %}
@@ -129,11 +136,11 @@
 				})
 				.attr("x", 4)
 				.attr("y", function(d, i) {
-					return i * (h / 6) + 19;
+					return i * (h / 6) + 17;
 				})
 				.attr("font-family", "Helvetica")
 				.attr("fill", "#6BAED6")
-				.attr("font-size", 19);
+				.attr("font-size", 17);
 				
 		};		
         </script>

@@ -22,8 +22,7 @@ __license__ = 'ISC'
 __copyright__ = 'Copyright 2012 Kenneth Reitz'
 
 
-#from . import utils
-import utils
+from . import utils
 from .models import Request, Response
 from .api import request, get, head, post, patch, put, delete, options
 from .sessions import session, Session
