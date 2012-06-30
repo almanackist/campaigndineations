@@ -39,13 +39,15 @@
 			font-size: 15px;
 		}
 		
-		
-		input[type=text] {
-			width: 400px;
-			font-size: 20px;
-			padding: 2px;
+		.button {
+ 		  	border: 1px solid #006;
+    		background: #9cf;
+    		margin-top:5px;
+    		-moz-border-radius: 7px;
+			-webkit-border-radius: 7px;
+			border-radius: 4px;
 		}
-		
+				
 		.simple-link {
 			text-decoration:none;
 			color:blue;
@@ -57,11 +59,7 @@
 			font-size: 17px;
 			font-family: monospace;
 		}
-				
-		input[type=submit] {
-			font-size: 24px;
-		}
-		
+						
 		hr {
 			margin: 20px auto;
 		}
