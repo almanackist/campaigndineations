@@ -26,7 +26,8 @@
 	 
 		<hr>
 		<div class="footnote">(Campaign contribution data from the Sunlight Foundation's <a class="simple-link" href="http://data.influenceexplorer.com/api/contributions/">TransparencyData</a> API, for Q4 2011 and slightly into Q1 2012, the most recent period for which 
-		I could retrieve and analyze individual contributions. Restaurant information via Factual's <a class="simple-link" href="http://developer.factual.com/display/docs/Places+API">Places</a> and <a class="simple-link" href="http://developer.factual.com/display/docs/Places+API+-+Restaurants">Restaurants</a> APIs.)</div>
+		I could retrieve and analyze individual contributions. Restaurant information via Factual's <a class="simple-link" href="http://developer.factual.com/display/docs/Places+API">Places</a> and <a class="simple-link" href="http://developer.factual.com/display/docs/Places+API+-+Restaurants">Restaurants</a> APIs.
+		And just for fun, high-priced dishes via the <a class="simple-link" href="http://getfoodgenius.com/api/">Food Genius</a> API)</div>
 
 		</td>
 		
@@ -42,15 +43,22 @@
 			 		{% else %}
 			 			<h3>{{ top_zips[z][1][0] }} contributions totalling ${{ '{:20,.2f}'.format(top_zips[z][1][1]).lstrip() }}</h3>
 			 		{% endif %}
-			 	<table style="margin-bottom:20px;">
+			 	<table width="720px" style="margin-bottom:20px;">
 			 	<tr>
 			 		<td>
 				 	<img class="map" src = '{{ img_urls[z] }}'>
 				 	</td>
 				 	
-				 	<td class = "{{ tables[z] }}">
+				 	<td align="left" class = "{{ tables[z] }}">
 			 		</td>
 			 	</tr>
+			 	<tr>
+			 		<td colspan="2">
+			 		{% if priciest_dish %}
+					<div style="font-size:11px;"><b>Extravagant menu item nearby:</b> {{ priciest_dish[z] }}</div>
+					{% endif %}
+		</td>
+		</tr>
 			 	</table>
 			{% endif %}
 	 	{% endfor %}
