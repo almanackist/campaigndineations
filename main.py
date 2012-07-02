@@ -10,6 +10,9 @@ import time
 from google.appengine.api import memcache
 from collections import Counter
 
+# API keys and basic handlers for: 
+# - FoodGenius
+# - Factual
 from keys import fg, factual  
 
 ### TEMPLATE VARIABLES
@@ -182,7 +185,6 @@ def top_zips(contributions):
     zip_by_amount.reverse()
     return zip_by_amount[:3] 
  
-
 def category_clean(cat_string):
     return re.findall('[\w ]+$', cat_string)[0].lstrip()
 
@@ -217,21 +219,24 @@ class MainPage(Handler):
             kwargs['candidate'] = self.request.get('candidate')
             kwargs['state'] = self.request.get('state')
             params = {'recipient_ft':urllib.quote_plus(kwargs['candidate']), 'contributor_state':kwargs['state'], 'cycle':'2012', 'date':'><|2011-09-01|2012-06-30', 'per_page':'50000'}
-            contributions = pol_contributions(**params)
-            kwargs['top_zips'] = top_zips(contributions)
-            kwargs['tables'] = ['table0', 'table1', 'table2']
-            kwargs['rest_data'] = [factual_zip_dining_summary(i[0]) for i in kwargs['top_zips']]
-
-#            kwargs['img_urls'] = [gmaps_img(factual_latlong_from_id(i[0])) for i in kwargs['top_zips']]
-#            data = factual.raw_read('/multi',{"queries":{"place":"/places/t/global?geo={'$point':[34.06021,-118.41828]}&limit=1","place2":{"place":"/places/t/global?geo={'$point':[35.06021,-118.41828]}&limit=1"}}})
-#            logging.info(data)
-
-            kwargs['priciest_dish'] = [foodgenius_expensive_nearby(i[0]) for i in kwargs['top_zips']]
-
-                        
-            kwargs['img_urls'] = [gmaps_img_zip(str(i[0])) for i in kwargs['top_zips']]
-            logging.info(kwargs)
-            memcache.set(",".join([candidate,state]), kwargs)
+            try:
+                contributions = pol_contributions(**params)
+                kwargs['top_zips'] = top_zips(contributions)
+                kwargs['tables'] = ['table0', 'table1', 'table2']
+                kwargs['rest_data'] = [factual_zip_dining_summary(i[0]) for i in kwargs['top_zips']]
+    
+    #            kwargs['img_urls'] = [gmaps_img(factual_latlong_from_id(i[0])) for i in kwargs['top_zips']]
+    #            data = factual.raw_read('/multi',{"queries":{"place":"/places/t/global?geo={'$point':[34.06021,-118.41828]}&limit=1","place2":{"place":"/places/t/global?geo={'$point':[35.06021,-118.41828]}&limit=1"}}})
+    #            logging.info(data)
+    
+                kwargs['priciest_dish'] = [foodgenius_expensive_nearby(i[0]) for i in kwargs['top_zips']]
+    
+                            
+                kwargs['img_urls'] = [gmaps_img_zip(str(i[0])) for i in kwargs['top_zips']]
+                logging.info(kwargs)
+                memcache.set(",".join([candidate,state]), kwargs)
+            except:
+                kwargs['error'] = "Whoops! Something timed out. Try reloading."
         self.render('main.html', **kwargs)
 
 class HackPage(MainPage):
